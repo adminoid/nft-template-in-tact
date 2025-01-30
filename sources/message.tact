@@ -85,3 +85,7 @@ message UpdateNftContent {
     query_id: Int as uint64;
     new_content: Cell;
 }
+
+message UpdateCollectionOwner {
+    new_owner_address: Address;
+}

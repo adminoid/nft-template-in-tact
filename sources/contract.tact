@@ -80,6 +80,12 @@ contract NftCollection {
         };
     }
 
+    receive(msg: UpdateCollectionOwner) {
+        let ctx: Context = context();
+        require(ctx.sender == self.owner_address, "not owner");
+        self.owner_address = msg.new_owner_address;
+    }
+
     // ------------------ Get Function  ------------------ //
     get fun get_collection_data(): CollectionData {
         let b: StringBuilder = beginString();
