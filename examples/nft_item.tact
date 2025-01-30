@@ -79,15 +79,15 @@ contract NftItem {
     receive(msg: GetStaticData){
         let ctx: Context = context();
         send(SendParameters {
-        to: ctx.sender,
-        value: 0,
-        mode: 64,  // (return msg amount except gas fees)
-        bounce: true,
-        body: ReportStaticData{
-        query_id: msg.query_id,
-        index_id: self.item_index,
-        collection: self.collection_address
-        }.toCell()
+            to: ctx.sender,
+            value: 0,
+            mode: 64,  // (return msg amount except gas fees)
+            bounce: true,
+            body: ReportStaticData{
+                query_id: msg.query_id,
+                index_id: self.item_index,
+                collection: self.collection_address
+            }.toCell()
         });
     }
 
@@ -146,12 +146,12 @@ contract NftItem {
         b.append(".json");
 
         return GetNftData {
-        is_initialized: self.is_initialized,
-        index: self.item_index,
-        collection_address: self.collection_address,
-        owner: self.owner,
-        individual_content: b.toCell(),
-        editor: self.editor
+            is_initialized: self.is_initialized,
+            index: self.item_index,
+            collection_address: self.collection_address,
+            owner: self.owner,
+            individual_content: b.toCell(),
+            editor: self.editor
         };
     }
 }

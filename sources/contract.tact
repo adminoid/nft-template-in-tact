@@ -81,7 +81,7 @@ contract NftCollection {
     }
 
     // ------------------ Get Function  ------------------ //
-    get fun get_collection_data(): CollectionData {     
+    get fun get_collection_data(): CollectionData {
         let b: StringBuilder = beginString();
         let collectionDataString: String = self.collection_content.asSlice().asString();
         b.append(collectionDataString);
@@ -99,7 +99,7 @@ contract NftCollection {
     }
 
     get fun getNftItemInit(item_index: Int): StateInit {
-        return initOf NftItem(myAddress(), item_index);
+        return initOf NftItem(myAddress(), item_index, self.owner_address);
     }
     
     get fun get_nft_content(index: Int, individual_content: Cell): Cell { 
@@ -121,18 +121,21 @@ contract NftItem {
 
     owner: Address?;
     individual_content: Cell?;
+    editor: Address?;
 
-    init(collection_address: Address, item_index: Int){
+    init(collection_address: Address, item_index: Int, owner: Address){
         require(sender() == collection_address, "not from collection");
         self.collection_address = collection_address;
         self.item_index = item_index;
+        self.editor = owner;
+        self.owner = owner;
         self.is_initialized = false;
     }
 
     receive(msg: Transfer){
         let ctx: Context = context(); // Reference: https://docs.tact-lang.org/language/ref/common#context
         let msgValue: Int = self.msgValue(ctx.value);
-        
+
         if (self.is_initialized == false) {  // Initial Transfer, aka the "Minting" of the NFT
             require(ctx.sender == self.collection_address, "initialized tx need from collection");
             self.is_initialized = true;
@@ -189,6 +192,43 @@ contract NftItem {
         });
     }
 
+    receive(msg: TransferEditorship){
+        let ctx: Context = context();
+
+        let msgValue: Int = ctx.value; // Check the gasCost for storage
+        let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
+        let storageFee: Int = minTonsForStorage - min(tonBalanceBeforeMsg, minTonsForStorage);
+        msgValue = msgValue - (storageFee + gasConsumption);
+
+        // Only Editor of the this NFT Item can transfer editorship.
+        require(ctx.sender == self.editor, "access denied");
+        require(msgValue > 0, "invalid amount");
+
+        self.editor = msg.new_editor; // change current editor to the new_editor
+        if (msg.forward_amount > 0) {
+            send(SendParameters{
+                to: msg.new_editor,
+                value: msg.forward_amount,
+                mode: SendIgnoreErrors,
+                bounce: false,
+                body: EditorshipAssigned{
+                    query_id: msg.query_id,
+                    prev_editor: self.editor,
+                    forward_payload: msg.forward_payload
+                }.toCell()
+            });
+        }
+        msgValue = msgValue - ctx.readForwardFee();
+        if (msg.response_destination != null) {
+            send(SendParameters{
+                to: msg.response_destination,
+                value: msgValue - msg.forward_amount,
+                mode: SendPayGasSeparately,
+                body: Excesses { query_id: msg.query_id }.toCell() // 0xd53276db
+            });
+        }
+    }
+
     fun msgValue(value: Int): Int {
         let tonBalanceBeforeMsg: Int = myBalance() - value;
         let storageFee: Int = minTonsForStorage - min(tonBalanceBeforeMsg, minTonsForStorage);
@@ -208,7 +248,8 @@ contract NftItem {
             index: self.item_index, 
             collection_address: self.collection_address, 
             owner_address: self.owner!!,
-            individual_content: b.toCell()
+            individual_content: b.toCell(),
+            editor: self.editor
         };
     }
 }

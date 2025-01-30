@@ -25,14 +25,6 @@ struct RoyaltyParams {
     destination: Address;
 }
 
-message UpdateCollectionContent {
-    query_id: Int as uint64;
-    new_content: Cell;
-    numerator:  Int as uint16;
-    denominator: Int as uint16;
-    destination: Address;
-}
-
 message(0x5fcc3d14) Transfer {
     query_id: Int as uint64;
     new_owner: Address;
@@ -57,10 +49,34 @@ message(0x8b771735) ReportStaticData {
     index_id: Int;
     collection: Address;
 }
+
 struct GetNftData {
     is_initialized: Bool;
     index: Int;
     collection_address: Address;
     owner_address: Address;
     individual_content: Cell;
+    editor: Address?;
+}
+
+message UpdateCollectionContent {
+    query_id: Int as uint64;
+    new_content: Cell;
+    numerator:  Int as uint16;
+    denominator: Int as uint16;
+    destination: Address;
+}
+
+message TransferEditorship {
+    query_id: Int as uint64;
+    new_editor: Address;
+    response_destination: Address;
+    forward_amount: Int as coins;
+    forward_payload: Slice as remaining;
+}
+
+message EditorshipAssigned{
+    query_id: Int as uint64;
+    prev_editor: Address?;
+    forward_payload: Slice as remaining;
 }
