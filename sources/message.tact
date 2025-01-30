@@ -80,3 +80,8 @@ message EditorshipAssigned{
     prev_editor: Address?;
     forward_payload: Slice as remaining;
 }
+
+message UpdateNftContent {
+    query_id: Int as uint64;
+    new_content: Cell;
+}

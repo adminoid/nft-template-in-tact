@@ -229,6 +229,15 @@ contract NftItem {
         }
     }
 
+    receive(msg: UpdateNftContent) {
+        let ctx: Context = context();
+
+        // Only Editor of the this NFT can edit it.
+        require(ctx.sender == self.editor, "access denied");
+
+        self.individual_content = msg.new_content;
+    }
+
     fun msgValue(value: Int): Int {
         let tonBalanceBeforeMsg: Int = myBalance() - value;
         let storageFee: Int = minTonsForStorage - min(tonBalanceBeforeMsg, minTonsForStorage);
