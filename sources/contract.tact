@@ -1,4 +1,5 @@
 import "./message.tact";
+
 const minTonsForStorage: Int = ton("0.02");
 const gasConsumption: Int = ton("0.02");
 
@@ -30,26 +31,26 @@ contract NftCollection {
         require(self.next_item_index >= 0, "non-sequential NFTs");
         let nft_init: StateInit = self.getNftItemInit(self.next_item_index);
         send(SendParameters{
-                to: contractAddress(nft_init), 
-                value: msgValue, 
-                bounce: false,
-                mode: SendIgnoreErrors,
-                body: Transfer {
-                    query_id: 0,
-                    new_owner: sender,
-                    response_destination: self.owner_address,
-                    custom_payload: self.collection_content,
-                    forward_amount: 0,
-                    forward_payload: emptySlice()
-                }.toCell(),
-                code: nft_init.code,
-                data: nft_init.data
-            });
+            to: contractAddress(nft_init),
+            value: msgValue,
+            bounce: false,
+            mode: SendIgnoreErrors,
+            body: Transfer {
+                query_id: 0,
+                new_owner: sender,
+                response_destination: self.owner_address,
+                custom_payload: self.collection_content,
+                forward_amount: 0,
+                forward_payload: emptySlice()
+            }.toCell(),
+            code: nft_init.code,
+            data: nft_init.data
+        });
         // dump(self.next_item_index); // Reference at: https://tact-by-example.org/03-emit
         self.next_item_index = self.next_item_index + 1;
     }
 
-    receive(msg: GetRoyaltyParams) {   
+    receive(msg: GetRoyaltyParams) {
         let ctx: Context = context(); // get sender Info
         send(SendParameters{
             to: ctx.sender,
@@ -62,7 +63,21 @@ contract NftCollection {
                 denominator: (self.royalty_params!!).denominator,
                 destination: self.owner_address
             }.toCell()
-        });        
+        });
+    }
+
+    receive(msg: UpdateCollectionContent) {
+        // Only Owner of the this NFT Collection can update it.
+        let ctx: Context = context();
+
+        require(ctx.sender == self.owner_address, "not owner");
+
+        self.collection_content = msg.new_content;
+        self.royalty_params = RoyaltyParams{
+            numerator: msg.numerator,
+            denominator: msg.denominator,
+            destination: msg.destination
+        };
     }
 
     // ------------------ Get Function  ------------------ //
